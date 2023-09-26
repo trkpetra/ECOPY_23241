@@ -1,6 +1,6 @@
 #F0D5F1
 
-def events_from_list(input_list):
+def evens_from_list(input_list):
     return [num for num in input_list if num % 2 == 0]
 
 
@@ -53,11 +53,10 @@ def reverse_sort_by_key(input_dict):
 
 def sort_list_by_divisibility(input_list):
     res = {
-        "by_two": [i for i in input_list if i % 2 == 0],
-        "by_five": [i for i in input_list if i % 5 == 0],
+        "by_two": [i for i in input_list if i % 2 == 0 and i%5 != 0],
+        "by_five": [i for i in input_list if i % 5 == 0 and i%2 != 0],
         "by_two_and_five": [i for i in input_list if i % 2 == 0 and i % 5 == 0],
         "by_none": [i for i in input_list if i % 2 == 1 and i % 5 != 0 ]
     }
     return res
-
 
