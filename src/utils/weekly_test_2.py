@@ -1,7 +1,6 @@
 #F0D5F1
 import math
 import random
-import pyerf
 
 class LaplaceDistribution:
     def __init__(self, rand, loc, scale):
@@ -91,21 +90,17 @@ class ParetoDistribution:
 
     def gen_rand(self):
         u = random.uniform(0, 1)
-        if u < 0.5:
-            x = self.shape - self.scale * math.log(1 - 2 * u)
-        else:
-            x = self.shape + self.scale * math.log(2 * u - 1)
-        return float(x)
+        return self.ppf(u)
     def mean(self):
         if self.shape <= 1:
             raise Exception("Moment undefined")
         else:
             return (self.shape * self.scale) / (self.shape - 1)
     def variance(self):
-        if self.shape <= 2:
-            raise Exception("Moment undefined")
+        if self.shape > 2:
+            return (self.scale ** 2 * self.shape) / ((self.shape - 1) ** 2 * (self.shape - 2))
         else:
-            return (self.scale ** 2) * (self.shape / ((self.shape - 1) ** 2) * (self.shape - 2))
+            raise Exception("Moment undefined")
     def skewness(self):
         if self.shape <= 3:
             raise Exception("Moment undefined")
@@ -115,16 +110,13 @@ class ParetoDistribution:
         if self.shape <= 4:
             raise Exception("Moment undefined")
         else:
-            return (6 * (self.shape ** 3 + self.shape ** 2 - 6 * self.shape - 2)) / \
-                (self.shape * (self.shape - 3) * (self.shape - 4))
+            return (6 * (self.shape ** 3 + self.shape ** 2 - 6 * self.shape - 2)) / (self.shape * (self.shape - 3) * (self.shape - 4))
 
     def mvsk(self):
-        first = self.scale
-        second = ((self.shape * self.scale) ** 2) / ((self.shape - 2) * (self.shape - 1) ** 2)
-        third = (self.shape * self.scale) ** 3 * ((self.shape - 3) * (self.shape - 2)) / \
-                    ((self.shape - 1) ** 3 * (self.shape - 4))
-        return [first, second, third]
-
+        if self.shape <= 1:
+            raise Exception("Moment undefined")
+        else:
+            return [self.mean(), self.variance(), self.skewness(), self.ex_kurtosis()]
 
 
 
