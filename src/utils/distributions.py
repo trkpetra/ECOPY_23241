@@ -80,8 +80,6 @@ class ChiSquaredDistribution:
         rand_value = self.ppf(u)
         return rand_value
     def mean(self):
-        if self.dof <= 1:
-            raise Exception("Moment undefined")
         return self.dof
 
     def variance(self):
