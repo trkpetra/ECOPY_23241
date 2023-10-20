@@ -7,7 +7,6 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 
 
-
 def change_price_to_float(input_df):
     new_df = input_df.copy()
     new_df['item_price'] = new_df['item_price'].str.replace('$', '').astype(float)
@@ -43,8 +42,8 @@ def unique_items_over_ten_dollars(input_df):
 
 
 def items_starting_with_s(input_df):
-     new_df = input_df['item_name'][input_df['item_name'].str.startswith('S')]
-     return new_df['item_name']
+    new_df = input_df[(input_df['item_name'].str.startswith('S'))]
+    return new_df['item_name'].drop_duplicates()
 
 def first_three_columns(input_df):
     new_df = input_df.copy()
@@ -60,19 +59,19 @@ def sliced_view(input_df, columns_to_keep, column_to_filter, rows_to_keep):
     return filtered_df[columns_to_keep]
 
 def generate_quartile(input_df):
-    def assign_quartile(item_price):
-        if item_price >= 30:
+    new_df = input_df.copy()
+    def quartile(item_price):
+        if 30 <= item_price:
             return 'premium'
-        elif 20 <= item_price < 30:
+        elif 20 <= item_price <= 29.99:
             return 'high-cost'
-        elif 10 <= item_price < 20:
+        elif 10 <= item_price <= 19.99:
             return 'medium-cost'
         else:
             return 'low-cost'
 
-    input_df['Quartile'] = input_df['item_price'].apply(assign_quartile)
-
-    return input_df
+    new_df['Quartile'] = new_df['item_price'].apply(quartile)
+    return new_df
 
 def average_price_in_quartiles(input_df):
     new_df = input_df.copy()
@@ -84,90 +83,63 @@ def minmaxmean_price_in_quartile(input_df):
 
 import random
 from typing import List
-def gen_uniform_mean_trajectories(distribution, number_of_trajectories, length_of_trajectory, seed=42):
-    random.seed(42)
-    trajectories = []
 
-    for _ in range(number_of_trajectories):
-        trajectory = []
-        cumulative_sum = 0.0
+from src.utils import distributions as dist
+from src.weekly import weekly_test_1 as w1
+from src.weekly import weekly_test_2 as w2
 
-        for _ in range(length_of_trajectory):
-            random_value = random.uniform(0, 1)
-            cumulative_sum += random_value
-            avg_value = cumulative_sum / (len(trajectory) + 1)
-            trajectory.append(avg_value)
 
-        trajectories.append(trajectory)
+def gen_uniform_mean_trajectories(distribution: dist.UniformDistribution, number_of_trajectories, length_of_trajectory):
+    res = []
+    distribution.rand.seed(42)
+    for i in range(0, number_of_trajectories):
+        rand_num = []
+        for j in range(0, length_of_trajectory):
+            rand_num.append(distribution.gen_rand())
+        res.append(w1.cumavg_list(rand_num))
+    return res
 
-    return trajectories
+def gen_logistic_mean_trajectories(distribution: dist.LogisticDistribution, number_of_trajectories,
+                                   length_of_trajectory):
+    res = []
+    distribution.rand.seed(42)
+    for i in range(0, number_of_trajectories):
+        rand_num = []
+        for j in range(0, length_of_trajectory):
+            rand_num.append(distribution.gen_rand())
+        res.append(w1.cumavg_list(rand_num))
+    return res
 
-def gen_logistic_mean_trajectories(distribution, number_of_trajectories, length_of_trajectory, seed=42) -> List[List[float]]:
-    random.seed(42)
-    trajectories = []
 
-    for _ in range(number_of_trajectories):
-        trajectory = []
-        cumulative_sum = 0.0
 
-        for _ in range(length_of_trajectory):
-            random_value = random.random()
-            cumulative_sum += random_value
-            avg_value = cumulative_sum / (len(trajectory) + 1)
-            trajectory.append(avg_value)
+def gen_laplace_mean_trajectories(distribution: w2.LaplaceDistribution, number_of_trajectories, length_of_trajectory):
+    res = []
+    distribution.rand.seed(42)
+    for i in range(0, number_of_trajectories):
+        rand_num = []
+        for j in range(0, length_of_trajectory):
+            rand_num.append(distribution.gen_rand())
+        res.append(w1.cumavg_list(rand_num))
+    return res
 
-        trajectories.append(trajectory)
 
-    return trajectories
+def gen_cauchy_mean_trajectories(distribution: dist.CauchyDistribution, number_of_trajectories, length_of_trajectory):
+    res = []
+    distribution.rand.seed(42)
+    for i in range(0, number_of_trajectories):
+        rand_num = []
+        for j in range(0, length_of_trajectory):
+            rand_num.append(distribution.gen_rand())
+        res.append(w1.cumavg_list(rand_num))
+    return res
 
-def gen_laplace_mean_trajectories(distribution, number_of_trajectories, length_of_trajectory, seed=42) -> List[List[float]]:
-    random.seed(42)
-    trajectories = []
 
-    for _ in range(number_of_trajectories):
-        trajectory = []
-        cumulative_sum = 0.0
-
-        for _ in range(length_of_trajectory):
-            random_value = laplace_distribution.gen.rand(1, 3.3)
-            cumulative_sum += random_value
-            trajectory.append(cumulative_sum)
-
-        trajectories.append(trajectory)
-
-    return trajectories
-
-def gen_cauchy_mean_trajectories(distribution, number_of_trajectories, length_of_trajectory, seed=42) -> List[List[float]]:
-    random.seed(42)
-    trajectories = []
-
-    for _ in range(number_of_trajectories):
-        trajectory = []
-        cumulative_sum = 0.0
-
-        for _ in range(length_of_trajectory):
-            random_value = distribution(2, 4)
-            cumulative_sum += random_value
-            trajectory.append(cumulative_sum)
-
-        trajectories.append(trajectory)
-
-    return trajectories
-
-def gen_chi2_mean_trajectories(distribution, number_of_trajectories, length_of_trajectory, seed=42) -> List[List[float]]:
-    random.seed(42)
-    trajectories = []
-
-    for _ in range(number_of_trajectories):
-        trajectory = []
-        cumulative_sum = 0.0
-
-        for _ in range(length_of_trajectory):
-            random_value = random.uniform(3)
-            cumulative_sum += random_value
-            avg_value = cumulative_sum / (len(trajectory) + 1)
-            trajectory.append(avg_value)
-
-        trajectories.append(trajectory)
-
-    return trajectories
+def gen_chi2_mean_trajectories(distribution: dist.ChiSquaredDistribution, number_of_trajectories, length_of_trajectory):
+    res = []
+    distribution.rand.seed(42)
+    for i in range(0, number_of_trajectories):
+        rand_num = []
+        for j in range(0, length_of_trajectory):
+            rand_num.append(distribution.gen_rand())
+        res.append(w1.cumavg_list(rand_num))
+    return res
