@@ -25,7 +25,7 @@ class LinearRegressionSM:
 
     def get_pvalues(self):
         pvalues_df = pd.Series(self._model.pvalues, name="P-values for the corresponding coefficients")
-        return pvalues_df 
+        return pvalues_df
 
     def get_wald_test_result(self, restriction_matrix):
         wald_test = self._model.wald_test(restriction_matrix, scalar=True)
@@ -43,7 +43,10 @@ class LinearRegressionSM:
 
 
 import numpy as np
-from scipy.stats import t, f
+import statsmodels.api as sm
+from scipy.stats import t
+from scipy.stats import f
+import scipy.stats as stats
 
 class LinearRegressionNP:
     def __init__(self, left_hand_side: pd.DataFrame, right_hand_side: pd.DataFrame):
@@ -51,13 +54,9 @@ class LinearRegressionNP:
         self.right_hand_side = right_hand_side
 
     def fit(self):
-        X = self.right_hand_side.copy()
+        X = np.column_stack((np.ones(len(self.right_hand_side)), self.right_hand_side))
         y = self.left_hand_side
-        X.insert(0, 'Intercept', 1)
-
-
-        XTX_inv = np.linalg.inv(X.T @ X)
-        beta = XTX_inv @ X.T @ y
+        beta = np.linalg.inv(X.T @ X) @ X.T @ y
         self.beta = beta
 
     def get_params(self):
@@ -65,58 +64,43 @@ class LinearRegressionNP:
         return beta_series
 
     def get_pvalues(self):
-        X = self.right_hand_side.copy()
-        X.insert(0, 'Intercept', 1)
+        X = np.column_stack((np.ones(len(self.right_hand_side)), self.right_hand_side))
         y = self.left_hand_side
-        n = len(y)
-        p = len(X.columns)
-
-        RSS = ((y - X @ self.beta) ** 2).sum()
-        sigma_sq = RSS / (n - p)
-
-        C_inv = np.linalg.inv(X.T @ X)
-        se = np.sqrt(np.diagonal(C_inv) * sigma_sq)
-
-        t_stats = self.beta / se
-        p_values = 2 * (1 - np.abs(t_stats))
-        p_values = np.minimum(p_values, 2 - p_values)
-
-        p_values_series = pd.Series(p_values, name='P-values for the corresponding coefficients')
-        return p_values_series
+        n, k = X.shape
+        beta = self.beta
+        H = X @ np.linalg.inv(X.T @ X) @ X.T
+        residuals = y - X @ beta
+        residual_variance = (residuals @ residuals) / (n - k)
+        standard_errors = np.sqrt(np.diagonal(residual_variance * np.linalg.inv(X.T @ X)))
+        t_statistics = beta / standard_errors
+        df = n - k
+        pvalues = [2 * (1 - t.cdf(abs(t_stat), df)) for t_stat in t_statistics]
+        pvalues = pd.Series(pvalues, name="P-values for the corresponding coefficients")
+        return pvalues
     def get_wald_test_result(self, R):
-        X = self.right_hand_side.copy()
-        X.insert(0, 'Intercept', 1)
+        X = np.column_stack((np.ones(len(self.right_hand_side)), self.right_hand_side))
         y = self.left_hand_side
-        n = len(y)
-        p = len(X.columns)
+        beta = self.beta
+        residuals = y - X @ beta
+        r_matrix = np.array(R)
+        r = r_matrix @ beta
+        n = len(self.left_hand_side)
+        m, k = r_matrix.shape
+        sigma_squared = np.sum(residuals ** 2) / (n - k)
+        H = r_matrix @ np.linalg.inv(X.T @ X) @ r_matrix.T
+        wald = (r.T @ np.linalg.inv(H) @ r) / (m * sigma_squared)
+        p_value = 1 - f.cdf(wald, dfn=m, dfd=n - k)
+        return f'Wald: {wald:.3f}, p-value: {p_value:.3f}'
 
-        RSS = ((y - X @ self.beta) ** 2).sum()
-        sigma_sq = RSS / (n - p)
-
-        C_inv = np.linalg.inv(X.T @ X)
-
-        R = np.array(R)
-        m = R.shape[0]
-        r = R @ self.beta
-        M = R @ C_inv @ R.T
-        F = (r.T @ np.linalg.inv(M) @ r) / m
-        p_value = 1 - stats.f.cdf(F, m, n - p)
-
-        result = f'Wald: {F:.3f}, p-value: {p_value:.3f}'
-        return result
-
-    def get_model_goodness_values(self, include_intercept=False):
-        X = self.right_hand_side.copy()
-        if include_intercept:
-            X.insert(0, 'Intercept', 1)
+    def get_model_goodness_values(self):
+        X = np.column_stack((np.ones(len(self.right_hand_side)), self.right_hand_side))
         y = self.left_hand_side
-        n = len(y)
-        p = len(X.columns)
-
-        RSS = ((y - X @ self.beta) ** 2).sum()
-        TSS = ((y - y.mean()) ** 2).sum()
-        R_squared = 1 - RSS / TSS
-        adjusted_R_squared = 1 - (1 - R_squared) * ((n - 1) / (n - p - 1))
-
-        result = f'Centered R-squared: {R_squared:.3f}, Adjusted R-squared: {adjusted_R_squared:.3f}'
-        return result
+        n, k = X.shape
+        beta = self.beta
+        y_pred = X @ beta
+        ssr = np.sum((y_pred - np.mean(y)) ** 2)
+        sst = np.sum((y - np.mean(y)) ** 2)
+        centered_r_squared = ssr / sst
+        adjusted_r_squared = 1 - (1 - centered_r_squared) * (n - 1) / (n - k)
+        res = f"Centered R-squared: {centered_r_squared:.3f}, Adjusted R-squared: {adjusted_r_squared:.3f}"
+        return res
