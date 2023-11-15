@@ -104,3 +104,135 @@ class LinearRegressionNP:
         adjusted_r_squared = 1 - (1 - centered_r_squared) * (n - 1) / (n - k)
         res = f"Centered R-squared: {centered_r_squared:.3f}, Adjusted R-squared: {adjusted_r_squared:.3f}"
         return res
+
+# Feasible GLS elvű
+
+import numpy as np
+import pandas as pd
+from scipy.stats import t, f
+
+class LinearRegressionGLS:
+    def __init__(self, left_hand_side: pd.DataFrame, right_hand_side: pd.DataFrame):
+        self.left_hand_side = left_hand_side
+        self.right_hand_side = right_hand_side
+
+    def fit(self):
+        # OLS becslés
+        X = np.column_stack((np.ones(len(self.right_hand_side)), self.right_hand_side))
+        y = self.left_hand_side
+        beta_ols = np.linalg.inv(X.T @ X) @ X.T @ y
+        # Hibatagok számolása
+        residuals = y - X @ beta_ols
+
+        # Log négyzetes hibák becslése
+        X_gls = np.column_stack((np.ones(len(self.right_hand_side)), self.right_hand_side))
+        y_gls = np.sqrt(np.log(residuals**2))
+
+        log_residuals = np.exp(np.sqrt(np.log(residuals**2)))
+
+        # Számítás a V inverz mátrixhoz
+        V_inv_diagonal = 1 / log_residuals
+        V_inv = np.diag(V_inv_diagonal)
+
+        # GLS becslés
+        beta = np.linalg.inv(X_gls.T @ V_inv @ X_gls) @ (X_gls.T @ V_inv @ y_gls)
+        self.beta = beta
+    def get_params(self):
+        return pd.Series(self.beta, name='Beta coefficients')
+
+    def get_pvalues(self):
+        # OLS becslés
+        X = np.column_stack((np.ones(len(self.right_hand_side)), self.right_hand_side))
+        y = self.left_hand_side
+        beta_ols = np.linalg.inv(X.T @ X) @ X.T @ y
+
+
+        log_residuals = np.exp(np.sqrt(np.log(residuals**2)))
+
+        # Számítás a V inverz mátrixhoz
+        V_inv_diagonal = 1 / log_residuals
+        V_inv = np.diag(V_inv_diagonal)
+
+        # GLS becslés
+        beta = np.linalg.inv(X_gls.T @ V_inv @ X_gls) @ (X_gls.T @ V_inv @ y_gls)
+        # Hibatagok számolása
+        residuals = y - X @ beta_ols
+
+        # Log négyzetes hibák becslése
+        X_gls = np.column_stack((np.ones(len(self.right_hand_side)), self.right_hand_side))
+        y_gls = np.sqrt(np.log(residuals ** 2))
+        # Hibatagok számolása
+        residuals = self.left_hand_side - np.column_stack(
+            (np.ones(len(self.right_hand_side)), self.right_hand_side)) @ self.beta
+
+        # Számítás a t-statisztika és p-értékhez
+        dof = len(self.right_hand_side) - len(self.beta)  # Szabadsági fok
+        t_statistic = self.beta / np.sqrt(
+            np.diag(np.linalg.inv(X_gls.T @ V_inv @ X_gls) * (residuals.T @ residuals / dof)))
+        p_values = pd.Series(min(1 - abs(t.cdf(t_stat, dof)), abs(t.cdf(t_stat, dof))) * 2 for t_stat in t_statistic)
+
+        p_values.index = ["Intercept"] + list(self.right_hand_side.columns)
+
+        return p_values.rename("P-values for the corresponding coefficients")
+
+    def get_wald_test_result(self, R):
+        X = np.column_stack((np.ones(len(self.right_hand_side)), self.right_hand_side))
+        y = self.left_hand_side
+        beta_ols = np.linalg.inv(X.T @ X) @ X.T @ y
+        # Hibatagok számolása
+        residuals = y - X @ beta_ols
+
+        # Log négyzetes hibák becslése
+        X_gls = np.column_stack((np.ones(len(self.right_hand_side)), self.right_hand_side))
+        y_gls = np.sqrt(np.log(residuals ** 2))
+
+        log_residuals = np.exp(np.sqrt(np.log(residuals ** 2)))
+
+        # Számítás a V inverz mátrixhoz
+        V_inv_diagonal = 1 / log_residuals
+        V_inv = np.diag(V_inv_diagonal)
+
+        # GLS becslés
+        beta = np.linalg.inv(X_gls.T @ V_inv @ X_gls) @ (X_gls.T @ V_inv @ y_gls)
+        # Wald statisztika és p érték számolása
+        wald_value = (R @ self.beta) @ np.linalg.inv(R @ np.linalg.inv(X_gls.T @ V_inv @ X_gls) @ R.T) @ (
+                    R @ self.beta)
+        p_value = 1 - chi2.cdf(wald_value, len(R))
+
+        result = f"Wald: {wald_value:.3f}, p-value: {p_value:.3f}"
+
+        return result
+
+    def get_model_goodness_values(self):
+        X = np.column_stack((np.ones(len(self.right_hand_side)), self.right_hand_side))
+        y = self.left_hand_side
+        beta_ols = np.linalg.inv(X.T @ X) @ X.T @ y
+        # Hibatagok számolása
+        residuals = y - X @ beta_ols
+
+        # Log négyzetes hibák becslése
+        X_gls = np.column_stack((np.ones(len(self.right_hand_side)), self.right_hand_side))
+        y_gls = np.sqrt(np.log(residuals ** 2))
+
+        log_residuals = np.exp(np.sqrt(np.log(residuals ** 2)))
+
+        # Számítás a V inverz mátrixhoz
+        V_inv_diagonal = 1 / log_residuals
+        V_inv = np.diag(V_inv_diagonal)
+
+        # GLS becslés
+        beta = np.linalg.inv(X_gls.T @ V_inv @ X_gls) @ (X_gls.T @ V_inv @ y_gls)
+        # Centrált R-négyzet számítása
+        y_mean = np.mean(self.left_hand_side)
+        y_hat = np.column_stack((np.ones(len(self.right_hand_side)), self.right_hand_side)) @ self.beta_hat
+        centered_r_squared = 1 - np.sum((self.left_hand_side - y_hat) ** 2) / np.sum(
+            (self.left_hand_side - y_mean) ** 2)
+
+        # Módosított R-négyzet számítása
+        n = len(self.left_hand_side)
+        k = len(self.beta) - 1  # regresszorok száma
+        adjusted_r_squared = 1 - ((n - 1) / (n - k - 1)) * (1 - centered_r_squared)
+
+        result = f"Centered R-squared: {centered_r_squared:.3f}, Adjusted R-squared: {adjusted_r_squared:.3f}"
+
+        return result
