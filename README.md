@@ -59,6 +59,13 @@ Required for the **7th theoretic** test:
 * Gauss-Markov assumptions in case of generalized regression model (5)
 * Finite-sample properties of GLS (3)
 
+Required for the **8th theoretic** test:
+* [Likelihood function (2)](https://www.youtube.com/watch?v=93fPFOf547Q)
+* [Maximum Likelihood Estimator (1)](https://www.youtube.com/watch?v=sguol03tfWo)
+* [Log-likelihood function of Normal distribution (1)](https://www.youtube.com/watch?v=zuweZEzXVLw)
+* [Properties of MLE (4)](https://www.youtube.com/watch?v=lbnoIRSXRiA)
+* Efficiency of MLE (1)
+
 ## Practice
 
 **[Python Classes](https://realpython.com/python3-object-oriented-programming/)** (If the link does not work, open in *
@@ -69,3 +76,7 @@ Required for the **7th theoretic** test:
 **[Matplotlib Axes interface 2](https://yuleii.github.io/2020/07/02/introduction-to-data-visualization-with-matplotlib.html)**
 
 **[Pandas User Guide](https://pandas.pydata.org/docs/user_guide/index.html#user-guide)**
+
+**[SciPy optimization module](https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.minimize.html#scipy.optimize.minimize)**
+
+**[Example notebook for SciPy optimization](https://github.com/tirthajyoti/Optimization-Python/blob/master/SciPy_optimization.ipynb)**
